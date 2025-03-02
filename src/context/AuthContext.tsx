@@ -116,34 +116,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      try {
-        // Check if user is admin
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('email', email)
-          .single();
+      // Check if user is admin after successful login
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('email', email)
+        .single();
 
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          toast.error('Error verifying admin status');
-          await supabase.auth.signOut();
-          return;
-        }
-
-        if (profile && profile.is_admin) {
-          toast.success('Successfully signed in as admin');
-          navigate('/admin/dashboard');
-        } else {
-          toast.error('You do not have admin privileges');
-          await supabase.auth.signOut();
-        }
-      } catch (err) {
-        console.error('Error checking admin status:', err);
-        toast.error('An error occurred verifying admin status');
-        await supabase.auth.signOut();
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        toast.error('Error verifying admin status');
+        return;
       }
-    } catch (error) {
+
+      if (profile && profile.is_admin) {
+        toast.success('Successfully signed in as admin');
+        navigate('/admin/dashboard');
+      } else {
+        toast.info('Signed in successfully');
+      }
+    } catch (error: any) {
       console.error('Error signing in:', error);
       toast.error('An error occurred during sign in');
     }
