@@ -1,12 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React from "react";
+import Header from "@/components/common/Header";
+import LoginCard from "@/components/auth/LoginCard";
+import { Helmet } from "react-helmet";
 
 const Index = () => {
+  const handleLogin = (email: string, password: string) => {
+    console.log("Login attempt with:", { email, password });
+    // Here you would typically handle authentication
+  };
+
+  const handleForgotPassword = () => {
+    console.log("Forgot password clicked");
+    // Handle forgot password flow
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-white">
+      <Helmet>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </Helmet>
+
+      <Header logoUrl="https://cdn.builder.io/api/v1/image/assets/TEMP/692531a09f3d8f46fa6184a126a551c58ac31298" />
+
+      <main>
+        <LoginCard
+          adminLogoUrl="https://cdn.builder.io/api/v1/image/assets/TEMP/3498d51df3ff7e2a1f563eb8e42a91003b0e7ced"
+          emailIconUrl="https://cdn.builder.io/api/v1/image/assets/TEMP/bb75a0c80c993a6a1a4e3dcea8cac3d773f93c92"
+          passwordIconUrl="https://cdn.builder.io/api/v1/image/assets/TEMP/64da3df5875be6a0f4c466434f8f11592a3e6b65"
+          showPasswordIconUrl="https://cdn.builder.io/api/v1/image/assets/TEMP/53101a4b8d9e90343971771b8ed800546628408a"
+          onLogin={handleLogin}
+          onForgotPassword={handleForgotPassword}
+        />
+      </main>
     </div>
   );
 };
