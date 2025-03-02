@@ -10,6 +10,7 @@ interface Profile {
   id: string;
   email: string;
   is_admin: boolean;
+  user_type: 'admin' | 'establishment_owner';
   created_at: string;
   updated_at: string;
 }
@@ -19,7 +20,10 @@ type AuthContextType = {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  userType: string | null;
+  profile: Profile | null;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -30,7 +34,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userType, setUserType] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const navigate = useNavigate();
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+      
+      return data as Profile;
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const setData = async () => {
@@ -46,25 +72,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        try {
-          // Check if user is admin
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('is_admin')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
-            setIsAdmin(false);
-          } else if (profile) {
-            setIsAdmin(profile.is_admin || false);
-          } else {
-            setIsAdmin(false);
-          }
-        } catch (err) {
-          console.error('Error checking admin status:', err);
+        const profile = await fetchUserProfile(session.user.id);
+        
+        if (profile) {
+          setProfile(profile);
+          setIsAdmin(profile.is_admin || false);
+          setUserType(profile.user_type || null);
+        } else {
           setIsAdmin(false);
+          setUserType(null);
         }
       }
       
@@ -73,29 +89,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        // Check if user is admin when auth state changes
-        supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (error) {
-              console.error('Error fetching profile:', error);
-              setIsAdmin(false);
-            } else if (data) {
-              setIsAdmin(data.is_admin || false);
-            } else {
-              setIsAdmin(false);
-            }
-          });
+        const profile = await fetchUserProfile(session.user.id);
+        
+        if (profile) {
+          setProfile(profile);
+          setIsAdmin(profile.is_admin || false);
+          setUserType(profile.user_type || null);
+        } else {
+          setIsAdmin(false);
+          setUserType(null);
+        }
       } else {
         setIsAdmin(false);
+        setUserType(null);
+        setProfile(null);
       }
     });
 
@@ -116,28 +128,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Check if user is admin after successful login
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('email', email)
-        .single();
-
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        toast.error('Error verifying admin status');
-        return;
-      }
-
-      if (profile && profile.is_admin) {
-        toast.success('Successfully signed in as admin');
-        navigate('/admin/dashboard');
+      // Check user profile after successful login
+      const { data: userInfo } = await supabase.auth.getUser();
+      
+      if (userInfo?.user) {
+        const profile = await fetchUserProfile(userInfo.user.id);
+        
+        if (profile) {
+          if (profile.is_admin) {
+            toast.success('Successfully signed in as admin');
+            navigate('/admin/dashboard');
+          } else {
+            toast.success('Successfully signed in as establishment owner');
+            navigate('/owner/dashboard');
+          }
+        } else {
+          toast.info('Signed in successfully');
+        }
       } else {
         toast.info('Signed in successfully');
       }
     } catch (error: any) {
       console.error('Error signing in:', error);
       toast.error('An error occurred during sign in');
+    }
+  };
+
+  const signUp = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success('Registration successful! Please check your email for verification.');
+    } catch (error: any) {
+      console.error('Error signing up:', error);
+      toast.error('An error occurred during registration');
     }
   };
 
@@ -162,7 +194,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     isLoading,
     isAdmin,
+    userType,
+    profile,
     signIn,
+    signUp,
     signOut,
   };
 
