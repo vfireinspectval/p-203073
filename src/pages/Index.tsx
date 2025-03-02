@@ -3,8 +3,11 @@ import React from "react";
 import Header from "@/components/common/Header";
 import LoginCard from "@/components/auth/LoginCard";
 import { Helmet } from "react-helmet";
+import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
+  const { signIn } = useAuth();
+
   const handleForgotPassword = () => {
     console.log("Forgot password clicked");
     // Handle forgot password flow
@@ -28,6 +31,7 @@ const Index = () => {
           emailIconUrl="https://cdn.builder.io/api/v1/image/assets/TEMP/bb75a0c80c993a6a1a4e3dcea8cac3d773f93c92"
           passwordIconUrl="https://cdn.builder.io/api/v1/image/assets/TEMP/64da3df5875be6a0f4c466434f8f11592a3e6b65"
           showPasswordIconUrl="https://cdn.builder.io/api/v1/image/assets/TEMP/53101a4b8d9e90343971771b8ed800546628408a"
+          onLogin={signIn}
           onForgotPassword={handleForgotPassword}
         />
       </main>

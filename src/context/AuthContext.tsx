@@ -37,14 +37,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Check if user is admin
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single();
-        
-        setIsAdmin(profile?.is_admin || false);
+        try {
+          // Check if user is admin
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+            setIsAdmin(false);
+          } else {
+            setIsAdmin(profile?.is_admin || false);
+          }
+        } catch (err) {
+          console.error('Error checking admin status:', err);
+          setIsAdmin(false);
+        }
       }
       
       setIsLoading(false);
@@ -63,8 +73,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .select('is_admin')
           .eq('id', session.user.id)
           .single()
-          .then(({ data }) => {
-            setIsAdmin(data?.is_admin || false);
+          .then(({ data, error }) => {
+            if (error) {
+              console.error('Error fetching profile:', error);
+              setIsAdmin(false);
+            } else {
+              setIsAdmin(data?.is_admin || false);
+            }
           });
       } else {
         setIsAdmin(false);
@@ -88,18 +103,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Check if user is admin
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('email', email)
-        .single();
+      try {
+        // Check if user is admin
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('email', email)
+          .single();
 
-      if (profile?.is_admin) {
-        toast.success('Successfully signed in as admin');
-        navigate('/admin/dashboard');
-      } else {
-        toast.error('You do not have admin privileges');
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          toast.error('Error verifying admin status');
+          await supabase.auth.signOut();
+          return;
+        }
+
+        if (profile && profile.is_admin) {
+          toast.success('Successfully signed in as admin');
+          navigate('/admin/dashboard');
+        } else {
+          toast.error('You do not have admin privileges');
+          await supabase.auth.signOut();
+        }
+      } catch (err) {
+        console.error('Error checking admin status:', err);
+        toast.error('An error occurred verifying admin status');
         await supabase.auth.signOut();
       }
     } catch (error) {
