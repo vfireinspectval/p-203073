@@ -1,6 +1,8 @@
+
 import React, { useState } from "react";
 import InputField from "./InputField";
 import Button from "../common/Button";
+import { useAuth } from "@/context/AuthContext";
 
 interface LoginCardProps {
   adminLogoUrl: string;
@@ -8,7 +10,6 @@ interface LoginCardProps {
   passwordIconUrl: string;
   showPasswordIconUrl: string;
   hidePasswordIconUrl?: string;
-  onLogin?: (email: string, password: string) => void;
   onForgotPassword?: () => void;
 }
 
@@ -18,16 +19,22 @@ const LoginCard: React.FC<LoginCardProps> = ({
   passwordIconUrl,
   showPasswordIconUrl,
   hidePasswordIconUrl = showPasswordIconUrl,
-  onLogin,
   onForgotPassword,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onLogin) {
-      onLogin(email, password);
+    setIsLoading(true);
+    try {
+      await signIn(email, password);
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -78,7 +85,9 @@ const LoginCard: React.FC<LoginCardProps> = ({
           </button>
 
           <div className="flex justify-center mt-6">
-            <Button type="submit">LOG IN</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "LOGGING IN..." : "LOG IN"}
+            </Button>
           </div>
         </form>
       </div>
