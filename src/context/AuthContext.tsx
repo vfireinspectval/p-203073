@@ -5,6 +5,15 @@ import { User, Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+// Define the structure of a profile
+interface Profile {
+  id: string;
+  email: string;
+  is_admin: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -48,8 +57,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (profileError) {
             console.error('Error fetching profile:', profileError);
             setIsAdmin(false);
+          } else if (profile) {
+            setIsAdmin(profile.is_admin || false);
           } else {
-            setIsAdmin(profile?.is_admin || false);
+            setIsAdmin(false);
           }
         } catch (err) {
           console.error('Error checking admin status:', err);
@@ -77,8 +88,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (error) {
               console.error('Error fetching profile:', error);
               setIsAdmin(false);
+            } else if (data) {
+              setIsAdmin(data.is_admin || false);
             } else {
-              setIsAdmin(data?.is_admin || false);
+              setIsAdmin(false);
             }
           });
       } else {

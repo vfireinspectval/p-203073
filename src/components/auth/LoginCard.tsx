@@ -10,6 +10,7 @@ interface LoginCardProps {
   passwordIconUrl: string;
   showPasswordIconUrl: string;
   hidePasswordIconUrl?: string;
+  onLogin?: (email: string, password: string) => Promise<void>;
   onForgotPassword?: () => void;
 }
 
@@ -19,6 +20,7 @@ const LoginCard: React.FC<LoginCardProps> = ({
   passwordIconUrl,
   showPasswordIconUrl,
   hidePasswordIconUrl = showPasswordIconUrl,
+  onLogin,
   onForgotPassword,
 }) => {
   const [email, setEmail] = useState("");
@@ -30,7 +32,11 @@ const LoginCard: React.FC<LoginCardProps> = ({
     e.preventDefault();
     setIsLoading(true);
     try {
-      await signIn(email, password);
+      if (onLogin) {
+        await onLogin(email, password);
+      } else {
+        await signIn(email, password);
+      }
     } catch (error) {
       console.error("Login error:", error);
     } finally {
